@@ -12,7 +12,7 @@ export const STATUS_LABEL: Record<ArticleStatus, string> = {
   ARCHIVED: "アーカイブ",
 };
 
-// Tailwindは、クラス名が「完全な文字列」でソースにあるものだけを拾うの
+// Tailwindは、クラス名が「完全な文字列」でソースにあるものだけを拾う
 export const STATUS_BADGE_CLASS: Record<ArticleStatus, string> = {
   DRAFT: "bg-gray-200 text-gray-800",
   PUBLISHED: "bg-green-500 text-white",
