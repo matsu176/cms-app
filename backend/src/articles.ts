@@ -46,11 +46,13 @@ articlesRouter.post(
   "/",
   validateBody(articleCreateSchema),
   asyncHandler(async (req, res) => {
+    const status = req.body.status ?? "DRAFT"; // 指定がなければ下書き
     const article = await prisma.article.create({
       data: {
         ...req.body,
+        status,
+        published_at: status === "PUBLISHED" ? new Date() : null,
         slug: randomUUID(), // 仮：必須・重複不可のため自動生成
-        status: "DRAFT",
         author_user_id: 1, // 仮：ユーザー機能ができたら差し替え
       },
     });
@@ -63,9 +65,28 @@ articlesRouter.put(
   "/:id",
   validateBody(articleUpdateSchema),
   asyncHandler(async (req, res) => {
+    const id = Number(req.params.id);
+
+    // 存在しないIDなら、ここで P2025 → 404
+    const current = await prisma.article.findUniqueOrThrow({
+      where: { id },
+      select: { status: true, published_at: true },
+    });
+
+    // ステータスが指定されなければ、いまのステータスのまま
+    const nextStatus = req.body.status ?? current.status;
+
+    // 公開にした瞬間に現在日時。それ以外は null。
+    // すでに公開中の記事を編集しただけなら、公開日時は変えない。
+    let published_at: Date | null = null;
+    if (nextStatus === "PUBLISHED") {
+      published_at =
+        current.status === "PUBLISHED" ? current.published_at : new Date();
+    }
+
     const article = await prisma.article.update({
-      where: { id: Number(req.params.id) },
-      data: req.body,
+      where: { id },
+      data: { ...req.body, published_at },
     });
     res.json(article);
   })

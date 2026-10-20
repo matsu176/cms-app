@@ -13,4 +13,5 @@ export interface Article {
 export type ArticleFormValues = {
   title: string;
   body: string;
+  status: ArticleStatus;
 };

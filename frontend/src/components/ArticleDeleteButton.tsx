@@ -45,7 +45,7 @@ export default function ArticleDeleteButton({ article }: Props) {
       onClick={handleClick}
       disabled={mutation.isPending}
       aria-label={`「${article.title}」を削除`}
-      className="rounded border border-red-500 px-2 py-1 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+      className="w-full rounded border border-red-500 px-2 py-1 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
     >
       {mutation.isPending ? "削除中…" : "削除"}
     </button>
