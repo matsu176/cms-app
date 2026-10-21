@@ -1,12 +1,15 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { fetchArticles } from "../api/articles";
 import ArticleStatusSelect from "../components/ArticleStatusSelect";
 import ArticleDeleteButton from "../components/ArticleDeleteButton";
 import { STATUS_BADGE_CLASS, STATUS_LABEL } from "../constants/articleStatus";
 import Layout from "../components/Layout";
+import Pagination from "../components/Pagination";
+
+const PAGE_SIZE = 10;
 
 export default function ArticleListPage() {
   const navigate = useNavigate();
@@ -15,6 +18,26 @@ export default function ArticleListPage() {
     queryKey: ["articles"],
     queryFn: fetchArticles,
   });
+
+  const [searchParams] = useSearchParams();
+
+// URLの ?page=2 から、ページ番号を取り出す（数字でなければ 1）
+const requestedPage = Math.floor(Number(searchParams.get("page"))) || 1;
+
+const totalCount = data?.length ?? 0;
+const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+// 範囲外のページ番号（0、999 など）は、1〜最後の間に収める
+const currentPage = Math.min(Math.max(1, requestedPage), totalPages);
+
+// 表示するのは、このページの10件だけ
+const pagedArticles = data
+  ? data.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+  : [];
+
+// 件数表示用：このページの先頭と末尾が、全体の何件目か
+const rangeStart = (currentPage - 1) * PAGE_SIZE + 1;
+const rangeEnd = Math.min(currentPage * PAGE_SIZE, totalCount);
 
   useEffect(() => {
     if (isError) {
@@ -40,9 +63,13 @@ export default function ArticleListPage() {
       {data && data.length === 0 && <p className="mt-4">記事はありません</p>}
 
       {data && data.length > 0 && (
-        // 各行の間に仕切り線（divide-y）
+        <>
+        {/* 件数の表示 */}
+       <p className="mt-4 text-sm text-gray-600">
+        全{totalCount}件中 {rangeStart}〜{rangeEnd}件を表示
+       </p>
         <ul className="mt-4 divide-y divide-gray-200">
-          {data.map((article) => (
+          {pagedArticles.map((article) => (
             <li key={article.id} className="flex items-center gap-3 py-3">
               {/* ステータスラベル（バッジ） */}
               <span
@@ -76,6 +103,8 @@ export default function ArticleListPage() {
             </li>
           ))}
         </ul>
+        <Pagination currentPage={currentPage} totalPages={totalPages} />
+      </>
       )}
    
   </Layout>
