@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { STATUS_LABEL, STATUS_VALUES } from "../constants/articleStatus";
 import type { ArticleFormValues, ArticleStatus } from "../types/article";
+import toast from "react-hot-toast";
+import { generateSlug } from "../utils/slug";
+import dayjs from "dayjs";
 
 type Props = {
   initialValues?: ArticleFormValues;
@@ -10,6 +13,9 @@ type Props = {
   onCancel: () => void;
 };
 
+// <input type="datetime-local"> が使う形式
+const DATETIME_LOCAL_FORMAT = "YYYY-MM-DDTHH:mm";
+
 // ラベル列と入力欄の見た目（3つの行で共通にして、位置をそろえる）
 const labelClass = "w-32 shrink-0 pt-2 text-sm font-medium";
 const fieldClass = "w-full rounded border border-gray-300 px-3 py-2 text-sm";
@@ -17,19 +23,46 @@ const fieldClass = "w-full rounded border border-gray-300 px-3 py-2 text-sm";
 const buttonClass = "rounded px-4 py-2 text-sm disabled:opacity-50";
 
 export default function ArticleForm({
-  initialValues = { title: "", body: "", status: "DRAFT" },
+  initialValues = { title: "", slug: "", body: "", status: "DRAFT", published_at: null },
   isPending,
   errorMessage,
   onSubmit,
   onCancel,
 }: Props) {
   const [title, setTitle] = useState(initialValues.title);
+  const [slug, setSlug] = useState(initialValues.slug);
   const [body, setBody] = useState(initialValues.body);
   const [status, setStatus] = useState<ArticleStatus>(initialValues.status);
+  const initialLocal = initialValues.published_at
+  ? dayjs(initialValues.published_at).format(DATETIME_LOCAL_FORMAT)
+  : "";
+  const [publishedAt, setPublishedAt] = useState(initialLocal);
+
+  // タイトルからスラッグ候補を作って、入力欄に入れる
+  const handleGenerateSlug = () => {
+    const candidate = generateSlug(title);
+    if (candidate === "") {
+      toast.error(
+        "タイトルに英数字がないため、候補を作れません。スラッグを直接入力してください"
+      );
+      return;
+    }
+    setSlug(candidate);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ title, body, status });
+
+    let published_at: string | null = null;
+    if (status === "PUBLISHED" && publishedAt) {
+    // 変更していなければ、元の値をそのまま送る（秒の端数がずれないように）
+    published_at =
+      publishedAt === initialLocal
+        ? initialValues.published_at
+        : dayjs(publishedAt).toISOString();
+    }
+
+    onSubmit({ title, slug, body, status, published_at });
   };
 
   return (
@@ -48,6 +81,38 @@ export default function ArticleForm({
           onChange={(e) => setTitle(e.target.value)}
           className={fieldClass}
         />
+      </div>
+
+      {/* スラッグ */}
+      <div className="flex items-start gap-4">
+        <label htmlFor="slug" className={labelClass}>
+          スラッグ（必須）
+        </label>
+        <div className="w-full">
+          <div className="flex gap-2">
+            <input
+              id="slug"
+              type="text"
+              value={slug}
+              maxLength={200}
+              required
+              pattern="[A-Za-z0-9\-]+"
+              title="半角英数字とハイフンのみ使えます"
+              onChange={(e) => setSlug(e.target.value)}
+              className={`${fieldClass} min-w-0`}
+            />
+            <button
+              type="button"
+              onClick={handleGenerateSlug}
+              className="shrink-0 rounded bg-gray-200 px-3 py-2 text-sm text-gray-800 hover:bg-gray-300"
+            >
+              タイトルから自動生成
+            </button>
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            半角英数字とハイフンのみ。ほかの記事と重複できません
+          </p>
+        </div>
       </div>
 
       {/* 本文 */}
@@ -81,6 +146,27 @@ export default function ArticleForm({
             </option>
           ))}
         </select>
+      </div>
+
+      {/* 公開日時 */}
+      <div className="flex items-start gap-4">
+        <label htmlFor="published_at" className={labelClass}>
+         公開日時
+        </label>
+        <div className="w-full">
+          <input
+            id="published_at"
+            type="datetime-local"
+            value={publishedAt}
+            disabled={status !== "PUBLISHED"}
+            onChange={(e) => setPublishedAt(e.target.value)}
+            className={`${fieldClass} !w-64 disabled:bg-gray-100 disabled:text-gray-400`}
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            ステータスが「公開」のときだけ設定できます。空欄なら保存した時点で公開され、
+            未来の日時なら「予約中」になります
+          </p>
+         </div>
       </div>
 
       {/* エラーメッセージ（入力欄の左端にそろえる） */}

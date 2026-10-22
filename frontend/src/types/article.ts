@@ -3,6 +3,7 @@ export type ArticleStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 export interface Article {
   id: number;
   title: string;
+  slug: string; 
   body: string | null;
   status: ArticleStatus;
   published_at: string | null; // ISO 8601形式の文字列
@@ -12,6 +13,8 @@ export interface Article {
 
 export type ArticleFormValues = {
   title: string;
+  slug: string;
   body: string;
   status: ArticleStatus;
+  published_at: string | null; 
 };

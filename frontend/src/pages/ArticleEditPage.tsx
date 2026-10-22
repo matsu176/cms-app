@@ -75,8 +75,10 @@ export default function ArticleEditPage() {
         key={article.id}
         initialValues={{
           title: article.title,
+          slug: article.slug, 
           body: article.body ?? "",
           status: article.status,
+          published_at: article.published_at, 
         }}
         isPending={mutation.isPending}
         errorMessage={mutation.isError ? getErrorMessage(mutation.error) : null}

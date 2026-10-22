@@ -5,9 +5,16 @@ import toast from "react-hot-toast";
 import { fetchArticles } from "../api/articles";
 import ArticleStatusSelect from "../components/ArticleStatusSelect";
 import ArticleDeleteButton from "../components/ArticleDeleteButton";
-import { STATUS_BADGE_CLASS, STATUS_LABEL } from "../constants/articleStatus";
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
+import dayjs from "dayjs";
+import { isScheduled } from "../utils/article";
+import {
+  SCHEDULED_BADGE_CLASS,
+  SCHEDULED_LABEL,
+  STATUS_BADGE_CLASS,
+  STATUS_LABEL,
+} from "../constants/articleStatus";
 
 const PAGE_SIZE = 10;
 
@@ -69,19 +76,35 @@ const rangeEnd = Math.min(currentPage * PAGE_SIZE, totalCount);
         全{totalCount}件中 {rangeStart}〜{rangeEnd}件を表示
        </p>
         <ul className="mt-4 divide-y divide-gray-200">
-          {pagedArticles.map((article) => (
+          {pagedArticles.map((article) => {
+            // 一覧を表示するたびに、現在日時と比べて判定する
+            const scheduled = isScheduled(article);
+
+            return (
             <li key={article.id} className="flex items-center gap-3 py-3">
-              {/* ステータスラベル（バッジ） */}
+              {/* ステータスラベル（予約中のときは、青いバッジ） */}
               <span
-                className={`w-20 shrink-0 rounded px-2 py-0.5 text-center text-xs font-medium ${STATUS_BADGE_CLASS[article.status]}`}
+                className={`w-20 shrink-0 rounded px-2 py-0.5 text-center text-xs font-medium ${
+                  scheduled ? SCHEDULED_BADGE_CLASS :STATUS_BADGE_CLASS[article.status]
+                }`}
+                title={
+                  scheduled
+                    ? `${dayjs(article.published_at).format("YYYY/MM/DD HH:mm")} に公開予定`
+                    : undefined
+                }
               >
-                {STATUS_LABEL[article.status]}
+                {scheduled ? SCHEDULED_LABEL : STATUS_LABEL[article.status]}
               </span>
 
-              {/* タイトル（長いときは「…」で省略） */}
-              <span className="w-64 shrink-0 truncate" title={article.title}>
-                {article.title}
-              </span>
+              {/* タイトルとスラッグ（長いときは「…」で省略） */}
+              <div className="w-64 shrink-0">
+                 <p className="truncate" title={article.title}>
+                  {article.title}
+                 </p>
+                 <p className="truncate text-xs text-gray-500" title={article.slug}>
+                  {article.slug}
+                 </p>
+              </div>
 
               {/* 編集リンク */}
               <Link
@@ -101,7 +124,8 @@ const rangeEnd = Math.min(currentPage * PAGE_SIZE, totalCount);
                 <ArticleDeleteButton article={article} />
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
         <Pagination currentPage={currentPage} totalPages={totalPages} />
       </>

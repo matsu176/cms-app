@@ -18,3 +18,7 @@ export const STATUS_BADGE_CLASS: Record<ArticleStatus, string> = {
   PUBLISHED: "bg-green-500 text-white",
   ARCHIVED: "bg-yellow-200 text-yellow-800",
 };
+
+// 予約中のバッジ（公開の緑とは別の、青系）
+export const SCHEDULED_LABEL = "予約中";
+export const SCHEDULED_BADGE_CLASS = "bg-blue-500 text-white";

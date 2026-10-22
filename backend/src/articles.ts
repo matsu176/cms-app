@@ -47,12 +47,18 @@ articlesRouter.post(
   validateBody(articleCreateSchema),
   asyncHandler(async (req, res) => {
     const status = req.body.status ?? "DRAFT"; // 指定がなければ下書き
+
+    // 公開のときだけ、公開日時を持つ。指定がなければ、現在日時（すぐ公開）
+    let published_at: Date | null = null;
+    if (status === "PUBLISHED") {
+      published_at = req.body.published_at ?? new Date();
+    }
+
     const article = await prisma.article.create({
       data: {
-        ...req.body,
+        ...req.body, // title, slug, body, status
         status,
         published_at: status === "PUBLISHED" ? new Date() : null,
-        slug: randomUUID(), // 仮：必須・重複不可のため自動生成
         author_user_id: 1, // 仮：ユーザー機能ができたら差し替え
       },
     });
@@ -80,8 +86,19 @@ articlesRouter.put(
     // すでに公開中の記事を編集しただけなら、公開日時は変えない。
     let published_at: Date | null = null;
     if (nextStatus === "PUBLISHED") {
-      published_at =
-        current.status === "PUBLISHED" ? current.published_at : new Date();
+      if (req.body.published_at) {
+        // 日時の指定あり → その日時（未来なら「予約中」）
+        published_at = req.body.published_at;
+      } else if (
+        req.body.published_at === undefined &&
+        current.status === "PUBLISHED"
+      ) {
+        // 日時を送っていない + すでに公開中 → 変えない
+        published_at = current.published_at ?? new Date();
+      } else {
+        // 空欄（null）、または、新しく公開する → 現在日時
+        published_at = new Date();
+      }
     }
 
     const article = await prisma.article.update({
