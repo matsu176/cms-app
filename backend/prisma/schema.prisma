@@ -26,9 +26,20 @@ model Article {
   status         ArticleStatus @default(DRAFT)
   published_at   DateTime?
   category_id    Int?
+  category       Category?     @relation(fields: [category_id], references: [id], onDelete: SetNull)
   created_at     DateTime      @default(now())
   updated_at     DateTime      @updatedAt
   author_user_id Int
 
   @@map("article")
+}
+
+model Category {
+  id         Int       @id @default(autoincrement())
+  name       String    @unique @db.VarChar(100)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  articles   Article[]
+
+  @@map("category")
 }

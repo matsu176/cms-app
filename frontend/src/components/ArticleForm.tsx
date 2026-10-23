@@ -4,6 +4,8 @@ import type { ArticleFormValues, ArticleStatus } from "../types/article";
 import toast from "react-hot-toast";
 import { generateSlug } from "../utils/slug";
 import dayjs from "dayjs";
+import { useQuery } from "@tanstack/react-query";
+import { fetchCategories } from "../api/categories";
 
 type Props = {
   initialValues?: ArticleFormValues;
@@ -23,7 +25,7 @@ const fieldClass = "w-full rounded border border-gray-300 px-3 py-2 text-sm";
 const buttonClass = "rounded px-4 py-2 text-sm disabled:opacity-50";
 
 export default function ArticleForm({
-  initialValues = { title: "", slug: "", body: "", status: "DRAFT", published_at: null },
+  initialValues = { title: "", slug: "", body: "", status: "DRAFT", published_at: null, category_id: null },
   isPending,
   errorMessage,
   onSubmit,
@@ -37,6 +39,13 @@ export default function ArticleForm({
   ? dayjs(initialValues.published_at).format(DATETIME_LOCAL_FORMAT)
   : "";
   const [publishedAt, setPublishedAt] = useState(initialLocal);
+  const [categoryId, setCategoryId] = useState(
+  initialValues.category_id === null ? "" : String(initialValues.category_id)
+  );
+  const { data: categories } = useQuery({
+     queryKey: ["categories"],
+     queryFn: fetchCategories,
+   });
 
   // タイトルからスラッグ候補を作って、入力欄に入れる
   const handleGenerateSlug = () => {
@@ -62,8 +71,10 @@ export default function ArticleForm({
         : dayjs(publishedAt).toISOString();
     }
 
-    onSubmit({ title, slug, body, status, published_at });
-  };
+    onSubmit({ 
+      title, slug, body, status, published_at,
+      category_id: categoryId === "" ? null : Number(categoryId), });
+    };
 
   return (
     <form onSubmit={handleSubmit} className="mt-6 space-y-6">
@@ -127,6 +138,26 @@ export default function ArticleForm({
           onChange={(e) => setBody(e.target.value)}
           className={fieldClass}
         />
+      </div>
+
+      {/* カテゴリ */}
+      <div className="flex items-start gap-4">
+        <label htmlFor="category" className={labelClass}>
+         カテゴリ
+        </label>
+        <select
+          id="category"
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          className={`${fieldClass} !w-56`}
+        >
+          <option value="">カテゴリなし</option>
+         {categories?.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* ステータス */}

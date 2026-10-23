@@ -1,50 +1,36 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import { fetchArticles } from "../api/articles";
+import { fetchCategories } from "../api/categories";
 import ArticleStatusSelect from "../components/ArticleStatusSelect";
 import ArticleDeleteButton from "../components/ArticleDeleteButton";
 import Layout from "../components/Layout";
 import Pagination from "../components/Pagination";
-import dayjs from "dayjs";
-import { isScheduled } from "../utils/article";
 import {
   SCHEDULED_BADGE_CLASS,
   SCHEDULED_LABEL,
   STATUS_BADGE_CLASS,
   STATUS_LABEL,
 } from "../constants/articleStatus";
+import { isScheduled } from "../utils/article";
 
 const PAGE_SIZE = 10;
 
 export default function ArticleListPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["articles"],
     queryFn: fetchArticles,
   });
-
-  const [searchParams] = useSearchParams();
-
-// URLの ?page=2 から、ページ番号を取り出す（数字でなければ 1）
-const requestedPage = Math.floor(Number(searchParams.get("page"))) || 1;
-
-const totalCount = data?.length ?? 0;
-const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-
-// 範囲外のページ番号（0、999 など）は、1〜最後の間に収める
-const currentPage = Math.min(Math.max(1, requestedPage), totalPages);
-
-// 表示するのは、このページの10件だけ
-const pagedArticles = data
-  ? data.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
-  : [];
-
-// 件数表示用：このページの先頭と末尾が、全体の何件目か
-const rangeStart = (currentPage - 1) * PAGE_SIZE + 1;
-const rangeEnd = Math.min(currentPage * PAGE_SIZE, totalCount);
+  const { data: categories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: fetchCategories,
+  });
 
   useEffect(() => {
     if (isError) {
@@ -52,85 +38,164 @@ const rangeEnd = Math.min(currentPage * PAGE_SIZE, totalCount);
     }
   }, [isError]);
 
+  // ---------- カテゴリ絞り込み（URLの ?category=... と連動） ----------
+  // null：すべて ／ "none"：カテゴリなし ／ "3"：カテゴリID
+  const categoryParam = searchParams.get("category");
+
+  // 削除済みのカテゴリがURLに残っていたら、絞り込まない
+  const categoryFilter =
+    categoryParam === null ||
+    categoryParam === "none" ||
+    !categories ||
+    categories.some((c) => String(c.id) === categoryParam)
+      ? categoryParam
+      : null;
+
+  const filteredArticles = (data ?? []).filter((article) => {
+    if (categoryFilter === null) return true;
+    if (categoryFilter === "none") return article.category_id === null;
+    return article.category_id === Number(categoryFilter);
+  });
+
+  const handleCategoryChange = (value: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (value === "") {
+      next.delete("category");
+    } else {
+      next.set("category", value);
+    }
+    next.delete("page"); // 絞り込みを変えたら、1ページ目に戻す
+    setSearchParams(next);
+  };
+
+  // ---------- ページング（絞り込んだ結果に対して行う） ----------
+  const requestedPage = Math.floor(Number(searchParams.get("page"))) || 1;
+  const totalCount = filteredArticles.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const currentPage = Math.min(Math.max(1, requestedPage), totalPages);
+  const pagedArticles = filteredArticles.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
+  const rangeStart = (currentPage - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(currentPage * PAGE_SIZE, totalCount);
+
+  // 記事のカテゴリ名（カテゴリ一覧の取得前は、空欄にしておく）
+  const categoryLabel = (categoryId: number | null) => {
+    if (categoryId === null) return "カテゴリなし";
+    return categories?.find((c) => c.id === categoryId)?.name ?? "";
+  };
+
   return (
-  <Layout>
-      {/* 見出し + 新規作成ボタン */}
+    <Layout>
+      {/* 見出し + ボタン */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold">記事一覧</h2>
-        <button
-          onClick={() => navigate("/articles/new")}
-          className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+        <div className="flex gap-2">
+          <button
+            onClick={() => navigate("/categories")}
+            className="rounded bg-gray-200 px-4 py-2 text-sm text-gray-800 hover:bg-gray-300"
+          >
+            カテゴリ管理
+          </button>
+          <button
+            onClick={() => navigate("/articles/new")}
+            className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+          >
+            新規作成
+          </button>
+        </div>
+      </div>
+
+      {/* カテゴリ絞り込み */}
+      <div className="mt-4 flex items-center gap-2">
+        <label htmlFor="category-filter" className="text-sm font-medium">
+          カテゴリ
+        </label>
+        <select
+          id="category-filter"
+          value={categoryFilter ?? ""}
+          onChange={(e) => handleCategoryChange(e.target.value)}
+          className="w-48 rounded border border-gray-300 px-3 py-1.5 text-sm"
         >
-          新規作成
-        </button>
+          <option value="">すべて</option>
+          <option value="none">カテゴリなし</option>
+          {categories?.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {isLoading && <p className="mt-4">読み込み中…</p>}
 
       {data && data.length === 0 && <p className="mt-4">記事はありません</p>}
 
-      {data && data.length > 0 && (
-        <>
-        {/* 件数の表示 */}
-       <p className="mt-4 text-sm text-gray-600">
-        全{totalCount}件中 {rangeStart}〜{rangeEnd}件を表示
-       </p>
-        <ul className="mt-4 divide-y divide-gray-200">
-          {pagedArticles.map((article) => {
-            // 一覧を表示するたびに、現在日時と比べて判定する
-            const scheduled = isScheduled(article);
-
-            return (
-            <li key={article.id} className="flex items-center gap-3 py-3">
-              {/* ステータスラベル（予約中のときは、青いバッジ） */}
-              <span
-                className={`w-20 shrink-0 rounded px-2 py-0.5 text-center text-xs font-medium ${
-                  scheduled ? SCHEDULED_BADGE_CLASS :STATUS_BADGE_CLASS[article.status]
-                }`}
-                title={
-                  scheduled
-                    ? `${dayjs(article.published_at).format("YYYY/MM/DD HH:mm")} に公開予定`
-                    : undefined
-                }
-              >
-                {scheduled ? SCHEDULED_LABEL : STATUS_LABEL[article.status]}
-              </span>
-
-              {/* タイトルとスラッグ（長いときは「…」で省略） */}
-              <div className="w-64 shrink-0">
-                 <p className="truncate" title={article.title}>
-                  {article.title}
-                 </p>
-                 <p className="truncate text-xs text-gray-500" title={article.slug}>
-                  {article.slug}
-                 </p>
-              </div>
-
-              {/* 編集リンク */}
-              <Link
-                to={`/articles/${article.id}/edit`}
-                className="w-12 shrink-0 text-center text-sm text-blue-600 underline"
-              >
-                編集
-              </Link>
-
-              {/* ステータス選択 */}
-              <div className="w-28 shrink-0">
-                <ArticleStatusSelect article={article} />
-              </div>
-
-              {/* 削除ボタン */}
-              <div className="w-20 shrink-0">
-                <ArticleDeleteButton article={article} />
-              </div>
-            </li>
-            );
-          })}
-        </ul>
-        <Pagination currentPage={currentPage} totalPages={totalPages} />
-      </>
+      {data && data.length > 0 && filteredArticles.length === 0 && (
+        <p className="mt-4">該当する記事はありません</p>
       )}
-   
-  </Layout>
-   );
-  }
+
+      {filteredArticles.length > 0 && (
+        <>
+          <p className="mt-4 text-sm text-gray-600">
+            全{totalCount}件中 {rangeStart}〜{rangeEnd}件を表示
+          </p>
+
+          <ul className="mt-2 divide-y divide-gray-200">
+            {pagedArticles.map((article) => {
+              const scheduled = isScheduled(article);
+
+              return (
+                <li key={article.id} className="flex items-center gap-3 py-3">
+                  {/* ステータスラベル（予約中は青いバッジ） */}
+                  <span
+                    className={`w-20 shrink-0 rounded px-2 py-0.5 text-center text-xs font-medium ${
+                      scheduled
+                        ? SCHEDULED_BADGE_CLASS
+                        : STATUS_BADGE_CLASS[article.status]
+                    }`}
+                    title={
+                      scheduled
+                        ? `${dayjs(article.published_at).format("YYYY/MM/DD HH:mm")} に公開予定`
+                        : undefined
+                    }
+                  >
+                    {scheduled ? SCHEDULED_LABEL : STATUS_LABEL[article.status]}
+                  </span>
+
+                  {/* タイトル / スラッグ・カテゴリ */}
+                  <div className="w-64 shrink-0">
+                    <p className="truncate" title={article.title}>
+                      {article.title}
+                    </p>
+                    <p className="truncate text-xs text-gray-500">
+                      {article.slug} ／ {categoryLabel(article.category_id)}
+                    </p>
+                  </div>
+
+                  <Link
+                    to={`/articles/${article.id}/edit`}
+                    className="w-12 shrink-0 text-center text-sm text-blue-600 underline"
+                  >
+                    編集
+                  </Link>
+
+                  <div className="w-28 shrink-0">
+                    <ArticleStatusSelect article={article} />
+                  </div>
+
+                  <div className="w-20 shrink-0">
+                    <ArticleDeleteButton article={article} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
+          <Pagination currentPage={currentPage} totalPages={totalPages} />
+        </>
+      )}
+    </Layout>
+  );
+}

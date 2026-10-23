@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 type Props = {
   currentPage: number;
@@ -35,6 +35,14 @@ function NavItem({ to, disabled, children }: NavItemProps) {
 }
 
 export default function Pagination({ currentPage, totalPages }: Props) {
+  const [searchParams] = useSearchParams();
+
+  // いまのURLの条件（category など）を残して、page だけを変えたリンクを作る
+  const pageLink = (page: number) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("page", String(page));
+    return `?${next.toString()}`;
+  };
   // 1ページしかないときは、何も表示しない
   if (totalPages <= 1) return null;
 
@@ -55,12 +63,8 @@ export default function Pagination({ currentPage, totalPages }: Props) {
       aria-label="ページ送り"
       className="mt-6 flex items-center justify-center gap-2"
     >
-      <NavItem to="?page=1" disabled={isFirst}>
-        先頭
-      </NavItem>
-      <NavItem to={`?page=${currentPage - 1}`} disabled={isFirst}>
-        前へ
-      </NavItem>
+      <NavItem to={pageLink(1)} disabled={isFirst}>先頭</NavItem>
+      <NavItem to={pageLink(currentPage - 1)} disabled={isFirst}>前へ</NavItem>
 
       {pages.map((page) =>
         page === currentPage ? (
@@ -83,12 +87,8 @@ export default function Pagination({ currentPage, totalPages }: Props) {
         )
       )}
 
-      <NavItem to={`?page=${currentPage + 1}`} disabled={isLast}>
-        次へ
-      </NavItem>
-      <NavItem to={`?page=${totalPages}`} disabled={isLast}>
-        最後
-      </NavItem>
+      <NavItem to={pageLink(currentPage + 1)} disabled={isLast}>次へ</NavItem>
+      <NavItem to={pageLink(totalPages)} disabled={isLast}>最後</NavItem>
     </nav>
   );
 }

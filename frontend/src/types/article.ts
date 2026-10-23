@@ -9,6 +9,7 @@ export interface Article {
   published_at: string | null; // ISO 8601形式の文字列
   created_at: string;
   updated_at: string;
+  category_id: number | null;
 }
 
 export type ArticleFormValues = {
@@ -17,4 +18,5 @@ export type ArticleFormValues = {
   body: string;
   status: ArticleStatus;
   published_at: string | null; 
+  category_id: number | null;
 };

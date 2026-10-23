@@ -25,6 +25,8 @@ export const articleCreateSchema = z.object({
     .date({ message: "公開日時の形式が正しくありません" })
     .nullable()
     .optional(),
+  // カテゴリ：IDか、null（カテゴリなし）。省略も可
+  category_id: z.number().int().positive().nullable().optional(),
 });
 
 // 更新：スラッグを送らなければ「変更しない」。送るなら、同じルールでチェックする

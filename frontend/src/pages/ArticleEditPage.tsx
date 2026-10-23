@@ -79,6 +79,7 @@ export default function ArticleEditPage() {
           body: article.body ?? "",
           status: article.status,
           published_at: article.published_at, 
+          category_id: article.category_id,
         }}
         isPending={mutation.isPending}
         errorMessage={mutation.isError ? getErrorMessage(mutation.error) : null}
