@@ -28,6 +28,8 @@ export default function ArticleEditPage() {
     onSuccess: () => {
       toast.success("保存しました");
       queryClient.invalidateQueries({ queryKey: ["articles"] });
+      queryClient.invalidateQueries({ queryKey: ["articles"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
       navigate("/");
     },
     onError: (error) => {
@@ -80,6 +82,7 @@ export default function ArticleEditPage() {
           status: article.status,
           published_at: article.published_at, 
           category_id: article.category_id,
+          tags: article.tags.map((t) => t.name),
         }}
         isPending={mutation.isPending}
         errorMessage={mutation.isError ? getErrorMessage(mutation.error) : null}

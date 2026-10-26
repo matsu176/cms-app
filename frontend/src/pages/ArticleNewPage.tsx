@@ -14,6 +14,8 @@ export default function ArticleNewPage() {
     onSuccess: () => {
       toast.success("保存しました");
       queryClient.invalidateQueries({ queryKey: ["articles"] });
+      queryClient.invalidateQueries({ queryKey: ["articles"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
       navigate("/");
     },
     onError: (error) => {

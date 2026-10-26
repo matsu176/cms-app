@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import { fetchArticles } from "../api/articles";
 import { fetchCategories } from "../api/categories";
+import { fetchTags } from "../api/tags";
 import ArticleStatusSelect from "../components/ArticleStatusSelect";
 import ArticleDeleteButton from "../components/ArticleDeleteButton";
 import Layout from "../components/Layout";
@@ -31,6 +32,10 @@ export default function ArticleListPage() {
     queryKey: ["categories"],
     queryFn: fetchCategories,
   });
+  const { data: tags } = useQuery({
+    queryKey: ["tags"],
+    queryFn: fetchTags,
+  });
 
   useEffect(() => {
     if (isError) {
@@ -38,11 +43,11 @@ export default function ArticleListPage() {
     }
   }, [isError]);
 
-  // ---------- カテゴリ絞り込み（URLの ?category=... と連動） ----------
-  // null：すべて ／ "none"：カテゴリなし ／ "3"：カテゴリID
-  const categoryParam = searchParams.get("category");
+  // ---------- 絞り込み（URLの ?category=... ?tag=... と連動） ----------
+  const categoryParam = searchParams.get("category"); // null：すべて ／ "none"：カテゴリなし ／ "3"：ID
+  const tagParam = searchParams.get("tag"); // null：すべて ／ "3"：ID
 
-  // 削除済みのカテゴリがURLに残っていたら、絞り込まない
+  // 削除済みのカテゴリ・タグがURLに残っていたら、絞り込まない
   const categoryFilter =
     categoryParam === null ||
     categoryParam === "none" ||
@@ -51,18 +56,36 @@ export default function ArticleListPage() {
       ? categoryParam
       : null;
 
+  const tagFilter =
+    tagParam === null || !tags || tags.some((t) => String(t.id) === tagParam)
+      ? tagParam
+      : null;
+
+  // 条件は、すべて満たすものだけを残す（併用できる）
   const filteredArticles = (data ?? []).filter((article) => {
-    if (categoryFilter === null) return true;
-    if (categoryFilter === "none") return article.category_id === null;
-    return article.category_id === Number(categoryFilter);
+    if (categoryFilter === "none" && article.category_id !== null) return false;
+    if (
+      categoryFilter !== null &&
+      categoryFilter !== "none" &&
+      article.category_id !== Number(categoryFilter)
+    ) {
+      return false;
+    }
+    if (
+      tagFilter !== null &&
+      !article.tags.some((t) => t.id === Number(tagFilter))
+    ) {
+      return false;
+    }
+    return true;
   });
 
-  const handleCategoryChange = (value: string) => {
+  const handleFilterChange = (key: "category" | "tag", value: string) => {
     const next = new URLSearchParams(searchParams);
     if (value === "") {
-      next.delete("category");
+      next.delete(key);
     } else {
-      next.set("category", value);
+      next.set(key, value);
     }
     next.delete("page"); // 絞り込みを変えたら、1ページ目に戻す
     setSearchParams(next);
@@ -80,11 +103,13 @@ export default function ArticleListPage() {
   const rangeStart = (currentPage - 1) * PAGE_SIZE + 1;
   const rangeEnd = Math.min(currentPage * PAGE_SIZE, totalCount);
 
-  // 記事のカテゴリ名（カテゴリ一覧の取得前は、空欄にしておく）
   const categoryLabel = (categoryId: number | null) => {
     if (categoryId === null) return "カテゴリなし";
     return categories?.find((c) => c.id === categoryId)?.name ?? "";
   };
+
+  const secondaryButton =
+    "rounded bg-gray-200 px-4 py-2 text-sm text-gray-800 hover:bg-gray-300";
 
   return (
     <Layout>
@@ -92,10 +117,10 @@ export default function ArticleListPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold">記事一覧</h2>
         <div className="flex gap-2">
-          <button
-            onClick={() => navigate("/categories")}
-            className="rounded bg-gray-200 px-4 py-2 text-sm text-gray-800 hover:bg-gray-300"
-          >
+          <button onClick={() => navigate("/tags")} className={secondaryButton}>
+            タグ管理
+          </button>
+          <button onClick={() => navigate("/categories")} className={secondaryButton}>
             カテゴリ管理
           </button>
           <button
@@ -107,25 +132,46 @@ export default function ArticleListPage() {
         </div>
       </div>
 
-      {/* カテゴリ絞り込み */}
-      <div className="mt-4 flex items-center gap-2">
-        <label htmlFor="category-filter" className="text-sm font-medium">
-          カテゴリ
-        </label>
-        <select
-          id="category-filter"
-          value={categoryFilter ?? ""}
-          onChange={(e) => handleCategoryChange(e.target.value)}
-          className="w-48 rounded border border-gray-300 px-3 py-1.5 text-sm"
-        >
-          <option value="">すべて</option>
-          <option value="none">カテゴリなし</option>
-          {categories?.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
+      {/* 絞り込み */}
+      <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div className="flex items-center gap-2">
+          <label htmlFor="category-filter" className="text-sm font-medium">
+            カテゴリ
+          </label>
+          <select
+            id="category-filter"
+            value={categoryFilter ?? ""}
+            onChange={(e) => handleFilterChange("category", e.target.value)}
+            className="w-48 rounded border border-gray-300 px-3 py-1.5 text-sm"
+          >
+            <option value="">すべて</option>
+            <option value="none">カテゴリなし</option>
+            {categories?.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label htmlFor="tag-filter" className="text-sm font-medium">
+            タグ
+          </label>
+          <select
+            id="tag-filter"
+            value={tagFilter ?? ""}
+            onChange={(e) => handleFilterChange("tag", e.target.value)}
+            className="w-48 rounded border border-gray-300 px-3 py-1.5 text-sm"
+          >
+            <option value="">すべて</option>
+            {tags?.map((tag) => (
+              <option key={tag.id} value={tag.id}>
+                {tag.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {isLoading && <p className="mt-4">読み込み中…</p>}
@@ -148,7 +194,6 @@ export default function ArticleListPage() {
 
               return (
                 <li key={article.id} className="flex items-center gap-3 py-3">
-                  {/* ステータスラベル（予約中は青いバッジ） */}
                   <span
                     className={`w-20 shrink-0 rounded px-2 py-0.5 text-center text-xs font-medium ${
                       scheduled
@@ -164,7 +209,7 @@ export default function ArticleListPage() {
                     {scheduled ? SCHEDULED_LABEL : STATUS_LABEL[article.status]}
                   </span>
 
-                  {/* タイトル / スラッグ・カテゴリ */}
+                  {/* タイトル / スラッグ・カテゴリ / タグ */}
                   <div className="w-64 shrink-0">
                     <p className="truncate" title={article.title}>
                       {article.title}
@@ -172,6 +217,11 @@ export default function ArticleListPage() {
                     <p className="truncate text-xs text-gray-500">
                       {article.slug} ／ {categoryLabel(article.category_id)}
                     </p>
+                    {article.tags.length > 0 && (
+                      <p className="truncate text-xs text-blue-700">
+                        {article.tags.map((t) => `#${t.name}`).join(" ")}
+                      </p>
+                    )}
                   </div>
 
                   <Link

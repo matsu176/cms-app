@@ -8,6 +8,11 @@ import {
   articleUpdateSchema,
   articleStatusSchema,
 } from "./schemas/article.js";
+import {
+  articleInclude,
+  toArticleResponse,
+  toTagCreateInput,
+} from "./lib/articleTags.js";
 
 export const articlesRouter = Router();
 
@@ -25,8 +30,9 @@ articlesRouter.get(
   asyncHandler(async (_req, res) => {
     const articles = await prisma.article.findMany({
       orderBy: { created_at: "desc" },
+      include: articleInclude,
     });
-    res.json(articles);
+    res.json(articles.map(toArticleResponse));
   })
 );
 
@@ -36,8 +42,9 @@ articlesRouter.get(
   asyncHandler(async (req, res) => {
     const article = await prisma.article.findUniqueOrThrow({
       where: { id: Number(req.params.id) },
+      include: articleInclude,
     });
-    res.json(article);
+    res.json(toArticleResponse(article));
   })
 );
 
@@ -46,23 +53,26 @@ articlesRouter.post(
   "/",
   validateBody(articleCreateSchema),
   asyncHandler(async (req, res) => {
-    const status = req.body.status ?? "DRAFT"; // 指定がなければ下書き
+    // tags は、Prismaにそのまま渡せないので、取り出しておく
+    const { tags, ...fields } = req.body;
+    const status = fields.status ?? "DRAFT";
 
-    // 公開のときだけ、公開日時を持つ。指定がなければ、現在日時（すぐ公開）
     let published_at: Date | null = null;
     if (status === "PUBLISHED") {
-      published_at = req.body.published_at ?? new Date();
+      published_at = fields.published_at ?? new Date();
     }
 
     const article = await prisma.article.create({
       data: {
-        ...req.body, // title, slug, body, status
+        ...fields,
         status,
-        published_at: status === "PUBLISHED" ? new Date() : null,
+        published_at,
         author_user_id: 1, // 仮：ユーザー機能ができたら差し替え
+        tags: { create: toTagCreateInput(tags ?? []) },
       },
+      include: articleInclude,
     });
-    res.status(201).json(article);
+    res.status(201).json(toArticleResponse(article));
   })
 );
 
@@ -72,40 +82,39 @@ articlesRouter.put(
   validateBody(articleUpdateSchema),
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
+    const { tags, ...fields } = req.body;
 
-    // 存在しないIDなら、ここで P2025 → 404
     const current = await prisma.article.findUniqueOrThrow({
       where: { id },
       select: { status: true, published_at: true },
     });
 
-    // ステータスが指定されなければ、いまのステータスのまま
-    const nextStatus = req.body.status ?? current.status;
+    const nextStatus = fields.status ?? current.status;
 
-    // 公開にした瞬間に現在日時。それ以外は null。
-    // すでに公開中の記事を編集しただけなら、公開日時は変えない。
     let published_at: Date | null = null;
     if (nextStatus === "PUBLISHED") {
-      if (req.body.published_at) {
-        // 日時の指定あり → その日時（未来なら「予約中」）
-        published_at = req.body.published_at;
-      } else if (
-        req.body.published_at === undefined &&
-        current.status === "PUBLISHED"
-      ) {
-        // 日時を送っていない + すでに公開中 → 変えない
+      if (fields.published_at) {
+        published_at = fields.published_at;
+      } else if (fields.published_at === undefined && current.status === "PUBLISHED") {
         published_at = current.published_at ?? new Date();
       } else {
-        // 空欄（null）、または、新しく公開する → 現在日時
         published_at = new Date();
       }
     }
 
     const article = await prisma.article.update({
       where: { id },
-      data: { ...req.body, published_at },
+      data: {
+        ...fields,
+        published_at,
+        // tags が送られてきたときだけ、付け替える（省略なら、そのまま）
+        ...(tags !== undefined && {
+          tags: { deleteMany: {}, create: toTagCreateInput(tags) },
+        }),
+      },
+      include: articleInclude,
     });
-    res.json(article);
+    res.json(toArticleResponse(article));
   })
 );
 
@@ -134,3 +143,4 @@ articlesRouter.delete(
     res.status(204).send();
   })
 );
+

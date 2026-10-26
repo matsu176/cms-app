@@ -1,3 +1,5 @@
+import type { Tag } from "./tag";
+
 export type ArticleStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 
 export interface Article {
@@ -10,6 +12,7 @@ export interface Article {
   created_at: string;
   updated_at: string;
   category_id: number | null;
+  tags: Tag[];
 }
 
 export type ArticleFormValues = {
@@ -19,4 +22,5 @@ export type ArticleFormValues = {
   status: ArticleStatus;
   published_at: string | null; 
   category_id: number | null;
+  tags: string[]; 
 };

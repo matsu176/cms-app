@@ -27,6 +27,16 @@ export const articleCreateSchema = z.object({
     .optional(),
   // カテゴリ：IDか、null（カテゴリなし）。省略も可
   category_id: z.number().int().positive().nullable().optional(),
+  tags: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(1, "タグ名を入力してください")
+        .max(30, "タグ名は30文字以内で入力してください")
+    )
+    .max(20, "タグは20個までです")
+    .optional(),
 });
 
 // 更新：スラッグを送らなければ「変更しない」。送るなら、同じルールでチェックする

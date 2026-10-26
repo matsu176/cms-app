@@ -30,6 +30,7 @@ model Article {
   created_at     DateTime      @default(now())
   updated_at     DateTime      @updatedAt
   author_user_id Int
+  tags           ArticleTag[]
 
   @@map("article")
 }
@@ -42,4 +43,23 @@ model Category {
   articles   Article[]
 
   @@map("category")
+}
+
+model Tag {
+  id       Int          @id @default(autoincrement())
+  name     String       @unique @db.VarChar(30)
+  articles ArticleTag[]
+
+  @@map("tag")
+}
+
+model ArticleTag {
+  article_id Int
+  tag_id     Int
+  article    Article @relation(fields: [article_id], references: [id], onDelete: Cascade)
+  tag        Tag     @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([article_id, tag_id])
+  @@index([tag_id])
+  @@map("article_tag")
 }

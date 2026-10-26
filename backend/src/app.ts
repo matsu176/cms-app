@@ -3,6 +3,7 @@ import cors from "cors";
 import { articlesRouter } from "./articles.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { categoriesRouter } from "./categories.js";
+import { tagsRouter } from "./tags.js";
 
 export const app = express();
 app.use(cors());
@@ -18,5 +19,6 @@ app.get("/api/hello", (req, res) => {
 
 app.use("/api/articles", articlesRouter);
 app.use("/api/categories", categoriesRouter);
+app.use("/api/tags", tagsRouter); 
 
 app.use(errorHandler); 

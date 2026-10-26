@@ -6,6 +6,8 @@ import { generateSlug } from "../utils/slug";
 import dayjs from "dayjs";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCategories } from "../api/categories";
+import { fetchTags } from "../api/tags";
+import TagInput from "./TagInput";
 
 type Props = {
   initialValues?: ArticleFormValues;
@@ -25,7 +27,7 @@ const fieldClass = "w-full rounded border border-gray-300 px-3 py-2 text-sm";
 const buttonClass = "rounded px-4 py-2 text-sm disabled:opacity-50";
 
 export default function ArticleForm({
-  initialValues = { title: "", slug: "", body: "", status: "DRAFT", published_at: null, category_id: null },
+  initialValues = { title: "", slug: "", body: "", status: "DRAFT", published_at: null, category_id: null,tags: [] },
   isPending,
   errorMessage,
   onSubmit,
@@ -45,6 +47,11 @@ export default function ArticleForm({
   const { data: categories } = useQuery({
      queryKey: ["categories"],
      queryFn: fetchCategories,
+   });
+  const [tags, setTags] = useState<string[]>(initialValues.tags);
+  const { data: existingTags } = useQuery({
+     queryKey: ["tags"],
+     queryFn: fetchTags,
    });
 
   // タイトルからスラッグ候補を作って、入力欄に入れる
@@ -73,7 +80,9 @@ export default function ArticleForm({
 
     onSubmit({ 
       title, slug, body, status, published_at,
-      category_id: categoryId === "" ? null : Number(categoryId), });
+      category_id: categoryId === "" ? null : Number(categoryId),
+      tags, 
+    });
     };
 
   return (
@@ -158,6 +167,16 @@ export default function ArticleForm({
             </option>
           ))}
         </select>
+      </div>
+
+      {/* タグ */}
+      <div className="flex items-start gap-4">
+        <span className={labelClass}>タグ</span>
+        <TagInput
+          value={tags}
+          onChange={setTags}
+          suggestions={existingTags?.map((t) => t.name) ?? []}
+        />
       </div>
 
       {/* ステータス */}
