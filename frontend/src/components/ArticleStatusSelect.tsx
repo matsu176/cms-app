@@ -13,10 +13,11 @@ export default function ArticleStatusSelect({ article }: Props) {
 
   // キャッシュ内の「この記事の行」だけを書き換える
   const patchCache = (changes: Partial<Article>) => {
-    queryClient.setQueryData<Article[]>(["articles"], (old) =>
-      old?.map((a) => (a.id === article.id ? { ...a, ...changes } : a))
-    );
-  };
+  // ["articles"] で始まる、すべてのキャッシュ（条件ごとの一覧）を書き換える
+  queryClient.setQueriesData<Article[]>({ queryKey: ["articles"] }, (old) =>
+    old?.map((a) => (a.id === article.id ? { ...a, ...changes } : a))
+  );
+};
 
   const mutation = useMutation({
     mutationFn: (status: ArticleStatus) =>

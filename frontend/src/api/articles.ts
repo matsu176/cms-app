@@ -5,12 +5,6 @@ import type {
   ArticleStatus,
 } from "../types/article";
 
-export const fetchArticles = async (): Promise<Article[]> => {
-  const res = await axios.get<Article[]>("/api/articles");
-  return res.data;
-};
-
-
 export const createArticle = async (input: ArticleFormValues) => {
   const res = await axios.post("/api/articles", input);
   return res.data;
@@ -47,4 +41,25 @@ export const getErrorMessage = (
     return error.response.data.message;
   }
   return fallback;
+};
+
+// 一覧の絞り込み条件（URLのクエリパラメータと、同じ名前・同じ形）
+export type ArticleFilters = {
+  status?: ArticleStatus;
+  category?: string; // カテゴリのID、または "none"
+  tags?: string[]; // タグのID
+  keyword?: string;
+};
+
+export const fetchArticles = async (
+  filters: ArticleFilters = {}
+): Promise<Article[]> => {
+  const params = new URLSearchParams();
+  if (filters.status) params.set("status", filters.status);
+  if (filters.category) params.set("category", filters.category);
+  filters.tags?.forEach((id) => params.append("tag", id)); // ?tag=1&tag=2
+  if (filters.keyword) params.set("keyword", filters.keyword);
+
+  const res = await axios.get<Article[]>("/api/articles", { params });
+  return res.data;
 };

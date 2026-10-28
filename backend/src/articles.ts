@@ -13,6 +13,8 @@ import {
   toArticleResponse,
   toTagCreateInput,
 } from "./lib/articleTags.js";
+import { validateQuery } from "./middleware/validateQuery.js";
+import { articleQuerySchema, type ArticleQuery } from "./schemas/article.js";
 
 export const articlesRouter = Router();
 
@@ -25,10 +27,33 @@ articlesRouter.param("id", (_req, res, next, value: string) => {
 });
 
 // GET /api/articles — 一覧取得
+// GET /api/articles — 一覧取得（絞り込み・検索つき）
 articlesRouter.get(
   "/",
+  validateQuery(articleQuerySchema),
   asyncHandler(async (_req, res) => {
+    const { status, category, tag, keyword } = res.locals.query as ArticleQuery;
+
+    // ?tag=1 は数値、?tag=1&tag=2 は配列で届くので、配列にそろえる
+    const tagIds = tag === undefined ? [] : Array.isArray(tag) ? tag : [tag];
+
+    // 指定された条件だけを、where に入れる（入れた条件は、すべて満たすもの = AND）
+    const where = {
+      ...(status && { status }),
+      ...(category === "none" && { category_id: null }),
+      ...(typeof category === "number" && { category_id: category }),
+      // キーワード：タイトルまたは本文に、部分一致
+      ...(keyword && {
+        OR: [{ title: { contains: keyword } }, { body: { contains: keyword } }],
+      }),
+      // タグ：選んだタグのどれかひとつがついている記事
+      ...(tagIds.length > 0 && {
+        tags: { some: { tag_id: { in: tagIds } } },
+      }),
+    };
+
     const articles = await prisma.article.findMany({
+      where,
       orderBy: { created_at: "desc" },
       include: articleInclude,
     });

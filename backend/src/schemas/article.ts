@@ -47,3 +47,17 @@ export const articleUpdateSchema = articleCreateSchema.extend({
 export const articleStatusSchema = z.object({
   status: statusEnum,
 });
+
+// 一覧の絞り込み条件（URLのクエリパラメータ）
+const idSchema = z.coerce.number().int().positive();
+
+export const articleQuerySchema = z.object({
+  status: statusEnum.optional(),
+  // カテゴリ：ID、または "none"（カテゴリなし）
+  category: z.union([z.literal("none"), idSchema]).optional(),
+  // タグ：?tag=1 でも、?tag=1&tag=2 でもよい
+  tag: z.union([idSchema, z.array(idSchema)]).optional(),
+  keyword: z.string().trim().max(100).optional(),
+});
+
+export type ArticleQuery = z.infer<typeof articleQuerySchema>;

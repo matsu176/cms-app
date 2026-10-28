@@ -1,6 +1,6 @@
 import type { ErrorRequestHandler } from "express";
 
-const hasCode = (e: unknown, code: string) =>
+export const hasCode = (e: unknown, code: string) =>
   typeof e === "object" && e !== null && "code" in e && e.code === code;
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {

@@ -16,7 +16,7 @@ export default function ArticleDeleteButton({ article }: Props) {
 
     // ④ 成功時：一覧のキャッシュから対象記事を取り除き、トーストを出す
     onSuccess: () => {
-      queryClient.setQueryData<Article[]>(["articles"], (old) =>
+      queryClient.setQueriesData<Article[]>({ queryKey: ["articles"] }, (old) =>
         old?.filter((a) => a.id !== article.id)
       );
       toast.success("削除しました");
