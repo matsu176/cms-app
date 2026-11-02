@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ARTICLE_SORTS } from "../lib/articleSort.js";
 
 const statusEnum = z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"], {
   message: "ステータスの値が不正です",
@@ -58,6 +59,8 @@ export const articleQuerySchema = z.object({
   // タグ：?tag=1 でも、?tag=1&tag=2 でもよい
   tag: z.union([idSchema, z.array(idSchema)]).optional(),
   keyword: z.string().trim().max(100).optional(),
+  // 並び順（省略すると、作成日時が新しい順）
+  sort: z.enum(ARTICLE_SORTS, { message: "並び順の指定が正しくありません" }).optional(),
 });
 
 export type ArticleQuery = z.infer<typeof articleQuerySchema>;

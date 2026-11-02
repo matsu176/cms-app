@@ -15,6 +15,7 @@ import {
 } from "./lib/articleTags.js";
 import { validateQuery } from "./middleware/validateQuery.js";
 import { articleQuerySchema, type ArticleQuery } from "./schemas/article.js";
+import { toOrderBy } from "./lib/articleSort.js";
 
 export const articlesRouter = Router();
 
@@ -26,13 +27,12 @@ articlesRouter.param("id", (_req, res, next, value: string) => {
   next();
 });
 
-// GET /api/articles — 一覧取得
 // GET /api/articles — 一覧取得（絞り込み・検索つき）
 articlesRouter.get(
   "/",
   validateQuery(articleQuerySchema),
   asyncHandler(async (_req, res) => {
-    const { status, category, tag, keyword } = res.locals.query as ArticleQuery;
+    const { status, category, tag, keyword, sort } = res.locals.query as ArticleQuery;
 
     // ?tag=1 は数値、?tag=1&tag=2 は配列で届くので、配列にそろえる
     const tagIds = tag === undefined ? [] : Array.isArray(tag) ? tag : [tag];
@@ -54,7 +54,7 @@ articlesRouter.get(
 
     const articles = await prisma.article.findMany({
       where,
-      orderBy: { created_at: "desc" },
+      orderBy: toOrderBy(sort ?? "created_desc"),
       include: articleInclude,
     });
     res.json(articles.map(toArticleResponse));

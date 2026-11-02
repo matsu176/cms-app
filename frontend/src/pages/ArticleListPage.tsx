@@ -19,6 +19,7 @@ import {
 } from "../constants/articleStatus";
 import { isScheduled } from "../utils/article";
 import KeywordFilter from "../components/KeywordFilter"; 
+import { DEFAULT_SORT, SORT_OPTIONS } from "../constants/articleSort";
 
 const PAGE_SIZE = 10;
 
@@ -26,7 +27,7 @@ export default function ArticleListPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // ---------- ① 条件は、URLから読み取る（stateは使わない） ----------
+  // ---------- 条件は、URLから読み取る（stateは使わない） ----------
   const statusParam = searchParams.get("status");
   const status = STATUS_VALUES.find((s) => s === statusParam); // 不正な値は無視
 
@@ -38,11 +39,23 @@ export default function ArticleListPage() {
 
   const tagIds = searchParams.getAll("tag").filter((id) => /^\d+$/.test(id));
   const keywordParam = searchParams.get("keyword") ?? "";
+  const sortParam = searchParams.get("sort");
+  // 不正な値や、指定なしのときは、標準の並び順
+  const sort =
+  SORT_OPTIONS.find((o) => o.value === sortParam)?.value ?? DEFAULT_SORT;
+  
+  const filters: ArticleFilters = { 
+    status, 
+    category, 
+    tags: tagIds, 
+    keyword: keywordParam,
+    // 標準の並び順のときは、APIに sort を送らない
+    sort: sort === DEFAULT_SORT ? undefined : sort,
+  };
 
-  const filters: ArticleFilters = { status, category, tags: tagIds, keyword: keywordParam };
   const hasFilter = Boolean(status || category || tagIds.length > 0 || keywordParam);
 
-  // ---------- ② 条件を、URLに書き込む関数 ----------
+  // ---------- 条件を、URLに書き込む関数 ----------
   const updateParams = (
     changes: Record<string, string | string[] | null>,
     options?: { replace?: boolean }
@@ -61,7 +74,7 @@ export default function ArticleListPage() {
     setSearchParams(next, options);
   };
 
-  // ---------- ④ データ取得：queryKey に条件を入れる ----------
+  // ---------- データ取得：queryKey に条件を入れる ----------
   const { data, isLoading, isError, isPlaceholderData } = useQuery({
     queryKey: ["articles", filters], // 条件が変わると、別のキャッシュになり、自動で取り直される
     queryFn: () => fetchArticles(filters), // → GET /api/articles?status=...&keyword=...
@@ -91,7 +104,9 @@ export default function ArticleListPage() {
   };
 
   const clearFilters = () => {
-    setSearchParams(new URLSearchParams()); // 条件も、ページも、全部消す
+    const next = new URLSearchParams();
+    if (sortParam) next.set("sort", sortParam);
+    setSearchParams(next); // 条件も、ページも、全部消す
   };
 
   // ---------- ページング（絞り込み済みの結果に対して行う） ----------
@@ -141,6 +156,24 @@ export default function ArticleListPage() {
       <div className="mt-4 space-y-3 rounded border border-gray-200 p-4">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <div className="flex items-center gap-2">
+            <label htmlFor="sort" className="text-sm font-medium">
+              並び順
+            </label>
+            <select
+              id="sort"
+              value={sort}
+              onChange={(e) =>
+            // 標準の並び順は、URLに残さない（?sort= を消す）
+              updateParams({ sort: e.target.value === DEFAULT_SORT ? null : e.target.value })
+              }
+              className={`${selectClass} w-48`}
+            >
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
             <label htmlFor="status-filter" className="text-sm font-medium">
               ステータス
             </label>

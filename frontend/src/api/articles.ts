@@ -4,6 +4,7 @@ import type {
   ArticleFormValues,
   ArticleStatus,
 } from "../types/article";
+import type { ArticleSort } from "../constants/articleSort";
 
 export const createArticle = async (input: ArticleFormValues) => {
   const res = await axios.post("/api/articles", input);
@@ -49,6 +50,7 @@ export type ArticleFilters = {
   category?: string; // カテゴリのID、または "none"
   tags?: string[]; // タグのID
   keyword?: string;
+  sort?: ArticleSort; //
 };
 
 export const fetchArticles = async (
@@ -59,6 +61,7 @@ export const fetchArticles = async (
   if (filters.category) params.set("category", filters.category);
   filters.tags?.forEach((id) => params.append("tag", id)); // ?tag=1&tag=2
   if (filters.keyword) params.set("keyword", filters.keyword);
+  if (filters.sort) params.set("sort", filters.sort); 
 
   const res = await axios.get<Article[]>("/api/articles", { params });
   return res.data;
