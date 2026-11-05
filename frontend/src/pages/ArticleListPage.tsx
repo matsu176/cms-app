@@ -134,7 +134,7 @@ export default function ArticleListPage() {
   return (
     <Layout>
       {/* 見出し + ボタン */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-2xl font-semibold">記事一覧</h2>
         <div className="flex gap-2">
           <button onClick={() => navigate("/tags")} className={secondaryButton}>
@@ -154,9 +154,9 @@ export default function ArticleListPage() {
 
       {/* 絞り込み・検索 */}
       <div className="mt-4 space-y-3 rounded border border-gray-200 p-4">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div className="grid gap-3 sm:flex sm:flex-wrap sm:items-center sm:gap-x-6">
           <div className="flex items-center gap-2">
-            <label htmlFor="sort" className="text-sm font-medium">
+            <label htmlFor="sort" className="w-20 shrink-0 text-sm font-medium sm:w-auto">
               並び順
             </label>
             <select
@@ -174,14 +174,14 @@ export default function ArticleListPage() {
                 </option>
               ))}
             </select>
-            <label htmlFor="status-filter" className="text-sm font-medium">
+            <label htmlFor="status-filter" className="w-20 shrink-0 text-sm font-medium sm:w-auto">
               ステータス
             </label>
             <select
               id="status-filter"
               value={status ?? ""}
               onChange={(e) => updateParams({ status: e.target.value })}
-              className={`${selectClass} w-36`}
+              className={`${selectClass} min-w-0 flex-1 sm:w-36 sm:flex-none`}
             >
               <option value="">すべて</option>
               {STATUS_VALUES.map((value) => (
@@ -193,14 +193,14 @@ export default function ArticleListPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <label htmlFor="category-filter" className="text-sm font-medium">
+            <label htmlFor="category-filter" className="w-20 shrink-0 text-sm font-medium sm:w-auto">
               カテゴリ
             </label>
             <select
               id="category-filter"
               value={category ?? ""}
               onChange={(e) => updateParams({ category: e.target.value })}
-              className={`${selectClass} w-40`}
+              className={`${selectClass} min-w-0 flex-1 sm:w-40 sm:flex-none`}
             >
               <option value="">すべて</option>
               <option value="none">カテゴリなし</option>
@@ -213,7 +213,7 @@ export default function ArticleListPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <label htmlFor="keyword-filter" className="text-sm font-medium">
+            <label htmlFor="keyword-filter" className="w-20 shrink-0 text-sm font-medium sm:w-auto">
               キーワード
             </label>
             <KeywordFilter
@@ -282,7 +282,7 @@ export default function ArticleListPage() {
               const scheduled = isScheduled(article);
 
               return (
-                <li key={article.id} className="flex items-center gap-3 py-3">
+                <li key={article.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:gap-3">
                   <span
                     className={`w-20 shrink-0 rounded px-2 py-0.5 text-center text-xs font-medium ${
                       scheduled
@@ -298,7 +298,7 @@ export default function ArticleListPage() {
                     {scheduled ? SCHEDULED_LABEL : STATUS_LABEL[article.status]}
                   </span>
 
-                  <div className="w-64 shrink-0">
+                  <div className="min-w-0 flex-1 sm:w-64 sm:flex-none">
                     <p className="truncate" title={article.title}>
                       {article.title}
                     </p>
@@ -311,7 +311,8 @@ export default function ArticleListPage() {
                       </p>
                     )}
                   </div>
-
+                
+                 <div className="flex items-center gap-3 sm:contents">
                   <Link
                     to={`/articles/${article.id}/edit`}
                     className="w-12 shrink-0 text-center text-sm text-blue-600 underline"
@@ -326,6 +327,7 @@ export default function ArticleListPage() {
                   <div className="w-20 shrink-0">
                     <ArticleDeleteButton article={article} />
                   </div>
+                </div>
                 </li>
               );
             })}

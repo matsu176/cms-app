@@ -61,7 +61,7 @@ export default function Pagination({ currentPage, totalPages }: Props) {
   return (
     <nav
       aria-label="ページ送り"
-      className="mt-6 flex items-center justify-center gap-2"
+      className="mt-6 flex flex-wrap items-center justify-center gap-2"
     >
       <NavItem to={pageLink(1)} disabled={isFirst}>先頭</NavItem>
       <NavItem to={pageLink(currentPage - 1)} disabled={isFirst}>前へ</NavItem>

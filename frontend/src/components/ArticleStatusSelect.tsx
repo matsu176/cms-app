@@ -61,7 +61,7 @@ export default function ArticleStatusSelect({ article }: Props) {
       value={article.status}
       disabled={mutation.isPending} // 通信中は、この行だけ操作できない
       onChange={(e) => mutation.mutate(e.target.value as ArticleStatus)}
-      className="w-full rounded border px-2 py-1 text-sm"
+      className="w-full rounded border px-2 py-2 text-sm sm:py-1"
     >
       {STATUS_VALUES.map((value) => (
         <option key={value} value={value}>

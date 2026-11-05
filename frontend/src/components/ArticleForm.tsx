@@ -19,10 +19,10 @@ type Props = {
 
 // <input type="datetime-local"> が使う形式
 const DATETIME_LOCAL_FORMAT = "YYYY-MM-DDTHH:mm";
-
+const rowClass = "flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-4";
 // ラベル列と入力欄の見た目（3つの行で共通にして、位置をそろえる）
-const labelClass = "w-32 shrink-0 pt-2 text-sm font-medium";
-const fieldClass = "w-full rounded border border-gray-300 px-3 py-2 text-sm";
+const labelClass = "text-sm font-medium sm:w-32 sm:shrink-0 sm:pt-2";
+const fieldClass = "w-full rounded border border-gray-300 px-3 py-2 text-base sm:text-sm";
 // ボタンの形（一覧画面の「新規作成」ボタンと同じ形）
 const buttonClass = "rounded px-4 py-2 text-sm disabled:opacity-50";
 
@@ -88,7 +88,7 @@ export default function ArticleForm({
   return (
     <form onSubmit={handleSubmit} className="mt-6 space-y-6">
       {/* タイトル */}
-      <div className="flex items-start gap-4">
+      <div className={rowClass}>
         <label htmlFor="title" className={labelClass}>
           タイトル（必須）
         </label>
@@ -104,12 +104,12 @@ export default function ArticleForm({
       </div>
 
       {/* スラッグ */}
-      <div className="flex items-start gap-4">
+      <div className={rowClass}>
         <label htmlFor="slug" className={labelClass}>
           スラッグ（必須）
         </label>
         <div className="w-full">
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <input
               id="slug"
               type="text"
@@ -136,7 +136,7 @@ export default function ArticleForm({
       </div>
 
       {/* 本文 */}
-      <div className="flex items-start gap-4">
+      <div className={rowClass}>
         <label htmlFor="body" className={labelClass}>
           本文
         </label>
@@ -150,7 +150,7 @@ export default function ArticleForm({
       </div>
 
       {/* カテゴリ */}
-      <div className="flex items-start gap-4">
+      <div className={rowClass}>
         <label htmlFor="category" className={labelClass}>
          カテゴリ
         </label>
@@ -170,7 +170,7 @@ export default function ArticleForm({
       </div>
 
       {/* タグ */}
-      <div className="flex items-start gap-4">
+      <div className={rowClass}>
         <span className={labelClass}>タグ</span>
         <TagInput
           value={tags}
@@ -180,7 +180,7 @@ export default function ArticleForm({
       </div>
 
       {/* ステータス */}
-      <div className="flex items-start gap-4">
+      <div className={rowClass}>
         <label htmlFor="status" className={labelClass}>
           ステータス
         </label>
@@ -199,7 +199,7 @@ export default function ArticleForm({
       </div>
 
       {/* 公開日時 */}
-      <div className="flex items-start gap-4">
+      <div className={rowClass}>
         <label htmlFor="published_at" className={labelClass}>
          公開日時
         </label>
@@ -221,13 +221,13 @@ export default function ArticleForm({
 
       {/* エラーメッセージ（入力欄の左端にそろえる） */}
       {errorMessage && (
-        <p role="alert" className="pl-36 text-sm text-red-600">
+        <p role="alert" className="text-sm text-red-600 sm:pl-36">
           {errorMessage}
         </p>
       )}
 
       {/* ボタン（入力欄の左端にそろえて、ボタン同士は少し離す） */}
-      <div className="flex gap-3 pl-36">
+      <div className="flex gap-3 sm:pl-36">
         <button
           type="submit"
           disabled={isPending}

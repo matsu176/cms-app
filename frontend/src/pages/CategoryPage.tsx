@@ -74,7 +74,7 @@ export default function CategoryPage() {
       </div>
 
       {/* 追加フォーム */}
-      <form onSubmit={handleSubmit} className="mt-6 flex gap-2">
+      <form onSubmit={handleSubmit} className="min-w-0 flex-1 rounded border border-gray-300 px-3 py-2 text-base sm:w-64 sm:flex-none sm:text-sm">
         <input
           type="text"
           value={name}
