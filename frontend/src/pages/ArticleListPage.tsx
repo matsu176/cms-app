@@ -134,13 +134,19 @@ export default function ArticleListPage() {
   return (
     <Layout>
       {/* 見出し + ボタン */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+        grid-cols-1
+      >
         <h2 className="text-2xl font-semibold">記事一覧</h2>
         <div className="flex gap-2">
           <button onClick={() => navigate("/tags")} className={secondaryButton}>
             タグ管理
           </button>
-          <button onClick={() => navigate("/categories")} className={secondaryButton}>
+          <button
+            onClick={() => navigate("/categories")}
+            className={secondaryButton}
+          >
             カテゴリ管理
           </button>
           <button
@@ -154,27 +160,13 @@ export default function ArticleListPage() {
 
       {/* 絞り込み・検索 */}
       <div className="mt-4 space-y-3 rounded border border-gray-200 p-4">
-        <div className="grid gap-3 sm:flex sm:flex-wrap sm:items-center sm:gap-x-6">
+        {/* 1行目：スマホは縦に1項目ずつ、640px以上は横に並べる */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6">
           <div className="flex items-center gap-2">
-            <label htmlFor="sort" className="w-20 shrink-0 text-sm font-medium sm:w-auto">
-              並び順
-            </label>
-            <select
-              id="sort"
-              value={sort}
-              onChange={(e) =>
-            // 標準の並び順は、URLに残さない（?sort= を消す）
-              updateParams({ sort: e.target.value === DEFAULT_SORT ? null : e.target.value })
-              }
-              className={`${selectClass} w-48`}
+            <label
+              htmlFor="status-filter"
+              className="w-20 shrink-0 text-sm font-medium sm:w-auto"
             >
-              {SORT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <label htmlFor="status-filter" className="w-20 shrink-0 text-sm font-medium sm:w-auto">
               ステータス
             </label>
             <select
@@ -193,7 +185,10 @@ export default function ArticleListPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <label htmlFor="category-filter" className="w-20 shrink-0 text-sm font-medium sm:w-auto">
+            <label
+              htmlFor="category-filter"
+              className="w-20 shrink-0 text-sm font-medium sm:w-auto"
+            >
               カテゴリ
             </label>
             <select
@@ -213,13 +208,42 @@ export default function ArticleListPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <label htmlFor="keyword-filter" className="w-20 shrink-0 text-sm font-medium sm:w-auto">
+            <label
+              htmlFor="sort"
+              className="w-20 shrink-0 text-sm font-medium sm:w-auto"
+            >
+              並び順
+            </label>
+            <select
+              id="sort"
+              value={sort}
+              onChange={(e) =>
+                updateParams({
+                  sort: e.target.value === DEFAULT_SORT ? null : e.target.value,
+                })
+              }
+              className={`${selectClass} min-w-0 flex-1 sm:w-48 sm:flex-none`}
+            >
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="keyword-filter"
+              className="w-20 shrink-0 text-sm font-medium sm:w-auto"
+            >
               キーワード
             </label>
             <KeywordFilter
               value={keywordParam}
-            // 1文字ごとに、ブラウザの履歴が増えないよう、replace にする
-              onChange={(keyword) => updateParams({ keyword }, { replace: true })}
+              onChange={(keyword) =>
+                updateParams({ keyword }, { replace: true })
+              }
             />
           </div>
         </div>
@@ -282,7 +306,10 @@ export default function ArticleListPage() {
               const scheduled = isScheduled(article);
 
               return (
-                <li key={article.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:gap-3">
+                <li
+                  key={article.id}
+                  className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:gap-3"
+                >
                   <span
                     className={`w-20 shrink-0 rounded px-2 py-0.5 text-center text-xs font-medium ${
                       scheduled
@@ -311,23 +338,23 @@ export default function ArticleListPage() {
                       </p>
                     )}
                   </div>
-                
-                 <div className="flex items-center gap-3 sm:contents">
-                  <Link
-                    to={`/articles/${article.id}/edit`}
-                    className="w-12 shrink-0 text-center text-sm text-blue-600 underline"
-                  >
-                    編集
-                  </Link>
 
-                  <div className="w-28 shrink-0">
-                    <ArticleStatusSelect article={article} />
-                  </div>
+                  <div className="flex items-center gap-3 sm:contents">
+                    <Link
+                      to={`/articles/${article.id}/edit`}
+                      className="w-12 shrink-0 text-center text-sm text-blue-600 underline"
+                    >
+                      編集
+                    </Link>
 
-                  <div className="w-20 shrink-0">
-                    <ArticleDeleteButton article={article} />
+                    <div className="w-28 shrink-0">
+                      <ArticleStatusSelect article={article} />
+                    </div>
+
+                    <div className="w-20 shrink-0">
+                      <ArticleDeleteButton article={article} />
+                    </div>
                   </div>
-                </div>
                 </li>
               );
             })}
