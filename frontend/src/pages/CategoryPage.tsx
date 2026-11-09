@@ -74,7 +74,7 @@ export default function CategoryPage() {
       </div>
 
       {/* 追加フォーム */}
-      <form onSubmit={handleSubmit} className="min-w-0 flex-1 rounded border border-gray-300 px-3 py-2 text-base sm:w-64 sm:flex-none sm:text-sm">
+      <form onSubmit={handleSubmit} className="mt-6 flex w-full gap-2">
         <input
           type="text"
           value={name}
@@ -82,12 +82,12 @@ export default function CategoryPage() {
           required
           placeholder="カテゴリ名（例：技術）"
           onChange={(e) => setName(e.target.value)}
-          className="w-64 rounded border border-gray-300 px-3 py-2 text-sm"
+          className="min-w-0 flex-1 rounded border border-gray-300 px-3 py-2 text-base sm:w-64 sm:flex-none sm:text-sm"
         />
         <button
           type="submit"
           disabled={createMutation.isPending}
-          className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          className="shrink-0 rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {createMutation.isPending ? "追加中…" : "追加"}
         </button>
